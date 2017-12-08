@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Advance File Compressor</string>
+
+    <string name="internal_storage">Internal storage</string>
+
+    <!--Attachment-->
+    <string name="cannot_open_file">Can not open file</string>
+    <string name="no_app_to_perform">No Application found to perform camera action!</string>
+    <string name="failed_to_attach">Failed to attach selected file!</string>
+</resources>
