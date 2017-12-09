@@ -8,22 +8,28 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
 import com.nanda.filecompressor.R;
 import com.nanda.filecompressor.app.AppConstants;
+import com.nanda.filecompressor.app.AppController;
 import com.nanda.filecompressor.helper.AttachmentSelector;
 import com.nanda.filecompressor.utils.FileUtils;
+import com.nanda.filecompressor.utils.RxJavaUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
+import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity implements AttachmentSelector.AttachmentSelectionListener {
 
@@ -32,12 +38,27 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
 
     private AttachmentSelector attachmentSelector;
     private List<String> filePathList = new ArrayList<>();
+    private boolean isSingleCompression = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
+    }
+
+    @OnCheckedChanged({R.id.rb_multiple, R.id.rb_single})
+    public void onCompressTypeChecked(CompoundButton buttonView, boolean isChecked) {
+
+        switch (buttonView.getId()) {
+            case R.id.rb_single:
+                isSingleCompression = true;
+                break;
+            case R.id.rb_multiple:
+                isSingleCompression = false;
+                break;
+        }
 
     }
 
@@ -70,16 +91,37 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
         }
 
         if (code == AppConstants.REQUEST_CAMERA_PICK) {
-            filePathList.add(attachmentUri.toString());
-            showAttachment(filePathList);
+            String filePath = attachmentUri.toString();
+            filePath = filePath.replace("file://", "");
+            compressImage(filePath);
             return;
         }
 
         String filePath = FileUtils.getPath(this, attachmentUri);
         if (TextUtils.isEmpty(filePath))
             return;
-        filePathList.add(filePath);
-        showAttachment(filePathList);
+        compressImage(filePath);
+    }
+
+    private void compressImage(String filePath) {
+        AppController.getInstance().getFileCompress()
+                .compress(this, new File(filePath))
+                .compose(RxJavaUtils.<File>applyObserverSchedulers())
+                .subscribe(new Action1<File>() {
+                    @Override
+                    public void call(File file) {
+                        filePathList.add(file.getAbsolutePath());
+                        if (isSingleCompression)
+                            addAttachment(file.getAbsolutePath());
+                        else
+                            showAttachment(filePathList);
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                });
     }
 
     private void showAttachment(List<String> filePathList) {
@@ -98,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
         View view = LayoutInflater.from(this).inflate(R.layout.item_attachment, null, false);
         ImageView imgAttachment = view.findViewById(R.id.img_attachment);
 
+        imgAttachment.setImageResource(0);
         Glide.with(view.getContext())
                 .load(path)
                 .into(imgAttachment);

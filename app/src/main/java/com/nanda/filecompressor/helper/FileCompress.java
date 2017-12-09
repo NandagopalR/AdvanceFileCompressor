@@ -4,8 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import rx.Observable;
@@ -14,58 +12,34 @@ import static android.content.ContentValues.TAG;
 
 public class FileCompress {
 
-    private static String DEFAULT_DISK_CACHE_DIR = "app_disk_cache";
+    private Context context;
+    private String DEFAULT_DISK_CACHE_DIR = "app_disk_cache";
+    private File originalFile;
+    private List<File> originalFileList;
 
-    private FileCompressBuilder builder;
-
-    private File mFile;
-
-    private List<File> mFileList;
-
-    public FileCompress(File file) {
-        builder = new FileCompressBuilder(file);
+    public Observable<File> compress(Context context, File file) {
+        this.context = context;
+        this.originalFile = file;
+        return asObservable(originalFile);
     }
 
-    public static FileCompress compress(File file, File cacheDir) {
-        if (!isCacheDirValid(cacheDir)) {
-            throw new IllegalArgumentException("The cacheDir must be Directory");
-        }
-        FileCompress fileCompress = new FileCompress(cacheDir);
-        fileCompress.mFile = file;
-        fileCompress.mFileList = Collections.singletonList(file);
-        return fileCompress;
+    public Observable<List<File>> compress(Context context, List<File> fileList) {
+        this.context = context;
+        this.originalFileList = fileList;
+        return asListObservable(originalFileList);
     }
 
-    public static FileCompress compress(Context context, File file) {
-        FileCompress fileCompress = new FileCompress(FileCompress.getPhotoCacheDir(context));
-        fileCompress.mFile = file;
-        fileCompress.mFileList = Collections.singletonList(file);
-        return fileCompress;
+    public Observable<File> asObservable(File originalFile) {
+        FileCompressor compresser = new FileCompressor();
+        return compresser.singleAction(originalFile);
     }
 
-    public static FileCompress compress(Context context, List<File> files) {
-        FileCompress fileCompress = new FileCompress(FileCompress.getPhotoCacheDir(context));
-//        FileCompress fileCompress = new FileCompress(new File(Environment.getExternalStorageDirectory() + File.separator + "FileCompress_Compress"));
-        fileCompress.mFileList = new ArrayList<>(files);
-        fileCompress.mFile = files.get(0);
-        return fileCompress;
+    public Observable<List<File>> asListObservable(List<File> originalFileList) {
+        FileCompressor compresser = new FileCompressor();
+        return compresser.multipleAction(originalFileList);
     }
 
-    public Observable<File> asObservable() {
-        FileCompressor compresser = new FileCompressor(builder);
-        return compresser.singleAction(mFile);
-    }
-
-    public Observable<List<File>> asListObservable() {
-        FileCompressor compresser = new FileCompressor(builder);
-        return compresser.multipleAction(mFileList);
-    }
-
-    private static boolean isCacheDirValid(File cacheDir) {
-        return cacheDir.isDirectory() && (cacheDir.exists() || cacheDir.mkdirs());
-    }
-
-    private static File getPhotoCacheDir(Context context) {
+    private File getPhotoCacheDir(Context context) {
         return getPhotoCacheDir(context, DEFAULT_DISK_CACHE_DIR);
     }
 
@@ -84,6 +58,5 @@ public class FileCompress {
         }
         return null;
     }
-
 
 }
