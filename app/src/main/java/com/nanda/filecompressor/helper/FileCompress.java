@@ -13,9 +13,9 @@ import static android.content.ContentValues.TAG;
 public class FileCompress {
 
     private Context context;
-    private String DEFAULT_DISK_CACHE_DIR = "app_disk_cache";
     private File originalFile;
     private List<File> originalFileList;
+    private static final String DEFAULT_DISK_CACHE_DIR = "app_disk_cache";
 
     public Observable<File> compress(Context context, File file) {
         this.context = context;
@@ -31,12 +31,12 @@ public class FileCompress {
 
     public Observable<File> asObservable(File originalFile) {
         FileCompressor compresser = new FileCompressor();
-        return compresser.singleAction(originalFile);
+        return compresser.singleAction(getFilename(), originalFile);
     }
 
     public Observable<List<File>> asListObservable(List<File> originalFileList) {
         FileCompressor compresser = new FileCompressor();
-        return compresser.multipleAction(originalFileList);
+        return compresser.multipleAction(getFilename(), originalFileList);
     }
 
     private File getPhotoCacheDir(Context context) {
@@ -57,6 +57,11 @@ public class FileCompress {
             Log.e(TAG, "default disk cache dir is null");
         }
         return null;
+    }
+
+    public String getFilename() {
+        String mImageName = "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg";
+        return getPhotoCacheDir(context).getAbsolutePath() + File.separator + mImageName;
     }
 
 }

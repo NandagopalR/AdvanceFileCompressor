@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.media.ExifInterface;
-import android.os.Environment;
 
 import com.nanda.filecompressor.utils.RxJavaUtils;
 
@@ -22,22 +21,22 @@ import rx.functions.Func1;
 
 public class FileCompressor {
 
-    Observable<File> singleAction(final File file) {
+    Observable<File> singleAction(final String fileName, final File file) {
         return Observable.fromCallable(new Callable<File>() {
             @Override
             public File call() throws Exception {
-                return compressImage(file.getAbsolutePath());
+                return compressImage(fileName, file.getAbsolutePath());
             }
         }).compose(RxJavaUtils.<File>applyErrorTransformer());
     }
 
-    Observable<List<File>> multipleAction(final List<File> fileList) {
+    Observable<List<File>> multipleAction(final String fileName, final List<File> fileList) {
 
         return Observable.from(fileList)
                 .flatMapIterable(new Func1<File, Iterable<File>>() {
                     @Override
                     public Iterable<File> call(File file) {
-                        return (Iterable<File>) compressImage(file.getAbsolutePath());
+                        return (Iterable<File>) compressImage(fileName, file.getAbsolutePath());
                     }
                 })
                 .map(new Func1<File, File>() {
@@ -50,7 +49,7 @@ public class FileCompressor {
 
     }
 
-    public File compressImage(String imagePath) {
+    public File compressImage(String fileName, String imagePath) {
 
         final float maxHeight = 1280.0f;
         final float maxWidth = 1280.0f;
@@ -135,7 +134,7 @@ public class FileCompressor {
             e.printStackTrace();
         }
         FileOutputStream out = null;
-        String filepath = getFilename();
+        String filepath = fileName;
         try {
             out = new FileOutputStream(filepath);
 
@@ -167,21 +166,6 @@ public class FileCompressor {
         }
 
         return inSampleSize;
-    }
-
-    public String getFilename() {
-        File mediaStorageDir = new File(Environment.getExternalStorageDirectory()
-                + "/SanghaTapp/Compressed");
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            mediaStorageDir.mkdirs();
-        }
-
-        String mImageName = "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg";
-        String uriString = (mediaStorageDir.getAbsolutePath() + "/" + mImageName);
-        return uriString;
-
     }
 
 }
