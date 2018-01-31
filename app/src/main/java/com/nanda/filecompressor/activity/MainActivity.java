@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
             compressImage(filePath);
             return;
         }
-
+        filePath = FileUtils.getPath(this, Uri.parse(filePath));
         if (TextUtils.isEmpty(filePath))
             return;
         compressImage(filePath);
