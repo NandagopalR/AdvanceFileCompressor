@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <cache-path
-        name="downloads"
-        path="downloads/" />
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <files-path
-        name="Attachments"
-        path="Attachments/" />
+    <external-path
+        name="my_images"
+        path="Android/data/com.nanda.filecompressor/files/Pictures" />
 </paths>

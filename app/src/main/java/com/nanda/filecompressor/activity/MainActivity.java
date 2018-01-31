@@ -1,8 +1,11 @@
 package com.nanda.filecompressor.activity;
 
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -12,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.nanda.filecompressor.R;
@@ -86,19 +90,16 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
     }
 
     @Override
-    public void onAttachmentSelected(Uri attachmentUri, int code) {
-        if (attachmentUri == null) {
+    public void onAttachmentSelected(String filePath, int code) {
+        if (TextUtils.isEmpty(filePath)) {
             return;
         }
-
         if (code == AppConstants.REQUEST_CAMERA_PICK) {
-            String filePath = attachmentUri.toString();
-            filePath = filePath.replace("file://", "");
+            Log.e("FilePath", " - " + filePath);
             compressImage(filePath);
             return;
         }
 
-        String filePath = FileUtils.getPath(this, attachmentUri);
         if (TextUtils.isEmpty(filePath))
             return;
         compressImage(filePath);
@@ -136,6 +137,28 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
             addAttachment(item);
         }
 
+    }
+
+    public String getRealPathFromURI(Uri contentURI) {
+        String result = null;
+        Cursor cursor = getContentResolver().query(contentURI, null,
+                null, null, null);
+
+        if (cursor == null) { // Source is Dropbox or other similar local file
+            // path
+            result = contentURI.getPath();
+        } else {
+            cursor.moveToFirst();
+            try {
+                int idx = cursor
+                        .getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+                result = cursor.getString(idx);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            cursor.close();
+        }
+        return result;
     }
 
     private void addAttachment(String path) {

@@ -10,9 +10,11 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
+import com.nanda.filecompressor.BuildConfig;
 import com.nanda.filecompressor.R;
 import com.nanda.filecompressor.app.AppConstants;
 import com.nanda.filecompressor.utils.CommonUtils;
@@ -27,12 +29,12 @@ public class AttachmentSelector {
     private AppCompatActivity activity;
     private Fragment fragment;
     private AttachmentSelectionListener listener;
-    private Uri mCameraUri;
     private File mAudioFile;
+    private File mCameraFile;
     private String uniqueIdPerWorkOrder;
 
     public interface AttachmentSelectionListener {
-        void onAttachmentSelected(Uri attachmentUri, int code);
+        void onAttachmentSelected(String filePath, int code);
     }
 
     private AttachmentSelector(String uniqueIdPerWorkOrder, AttachmentSelectionListener listener) {
@@ -60,43 +62,33 @@ public class AttachmentSelector {
     }
 
     private Uri createUriForCameraIntent(Context context) throws IOException {
-        File parent = new File(Environment.getExternalStorageDirectory() + File.separator + "SanghaTApp");
-        parent.mkdirs();
-        String fileName = String.format("%s.jpg", uniqueIdPerWorkOrder);
-        File file = new File(parent, fileName);
-        if (!file.exists())
-            file.createNewFile();
+        File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        String fileName = String.format("%s", uniqueIdPerWorkOrder);
 
-        return Uri.fromFile(file);
+        mCameraFile = File.createTempFile(
+                fileName,  /* prefix */
+                ".jpg",        /* suffix */
+                storageDir      /* directory */
+        );
+        Uri imgUri = FileProvider.getUriForFile(getContext(),
+                "com.nanda.filecompressor", mCameraFile);
+
+        return imgUri;
     }
 
     public void selectCameraAttachment() throws IOException {
-        if (CommonUtils.checkCameraHardware(getContext())) {
-            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-            if (cameraIntent.resolveActivity(getContext().getPackageManager()) != null) {
-                mCameraUri = createUriForCameraIntent(getContext());
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraUri);
-                cameraIntent.setFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                // Workaround for Android bug.
-                // grantUriPermission also needed for KITKAT,
-                // see https://code.google.com/p/android/issues/detail?id=76683
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-                    List<ResolveInfo> resInfoList = getContext().getPackageManager().queryIntentActivities(cameraIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                    for (ResolveInfo resolveInfo : resInfoList) {
-                        String packageName = resolveInfo.activityInfo.packageName;
-                        getContext().grantUriPermission(packageName, mCameraUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    }
-                }
-                if (activity != null) {
-                    activity.startActivityForResult(cameraIntent, AppConstants.REQUEST_CAMERA_PICK);
-                } else {
-                    fragment.startActivityForResult(cameraIntent, AppConstants.REQUEST_CAMERA_PICK);
-                }
-            } else
-                Toast.makeText(getContext(), getContext().getString(R.string.app_name), Toast.LENGTH_SHORT).show();
+        if (takePictureIntent.resolveActivity(getContext().getPackageManager()) != null) {
+            Uri mCameraUri = createUriForCameraIntent(getContext());
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraUri);
+            if (activity != null) {
+                activity.startActivityForResult(takePictureIntent, AppConstants.REQUEST_CAMERA_PICK);
+            } else {
+                fragment.startActivityForResult(takePictureIntent, AppConstants.REQUEST_CAMERA_PICK);
+            }
         } else
-            Toast.makeText(getContext(), getContext().getString(R.string.no_app_to_perform), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), getContext().getString(R.string.app_name), Toast.LENGTH_SHORT).show();
     }
 
     public void selectDocumentAttachment() {
@@ -125,14 +117,14 @@ public class AttachmentSelector {
             try {
                 if (requestCode == AppConstants.REQUEST_CAMERA_PICK) {
                     if (listener != null) {
-                        if (mCameraUri != null) {
-                            listener.onAttachmentSelected(mCameraUri, AppConstants.REQUEST_CAMERA_PICK);
+                        if (mCameraFile != null) {
+                            listener.onAttachmentSelected(mCameraFile.getAbsolutePath(), AppConstants.REQUEST_CAMERA_PICK);
                         }
                     }
                 } else {
                     attachmentUri = data.getData();
                     if (listener != null) {
-                        listener.onAttachmentSelected(attachmentUri, AppConstants.REQUEST_DOCUMENT_PICK);
+                        listener.onAttachmentSelected(attachmentUri.toString(), AppConstants.REQUEST_DOCUMENT_PICK);
                     }
                 }
             } catch (Exception e) {
