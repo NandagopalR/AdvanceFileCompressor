@@ -129,7 +129,7 @@ public class AttachmentSelector {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                Toast.makeText(getContext(), getContext().getString(R.string.failed_to_attach), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(),  getContext().getString(R.string.failed_to_attach), Toast.LENGTH_SHORT).show();
             }
             return true;
         } else {

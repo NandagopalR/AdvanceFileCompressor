@@ -1,12 +1,20 @@
 package com.nanda.filecompressor.activity;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -39,17 +47,39 @@ import rx.functions.Action1;
 public class MainActivity extends AppCompatActivity implements AttachmentSelector.AttachmentSelectionListener {
 
     @BindView(R.id.layout_attachment)
-    LinearLayout layoutAttachment;
-
+//    LinearLayout layoutAttachment;
+    RecyclerView recyclerView;
+public LinearLayoutManager layoutManager;
     private AttachmentSelector attachmentSelector;
     private List<String> filePathList = new ArrayList<>();
     private boolean isSingleCompression = true;
+    private static final int MY_CAMERA_REQUEST_CODE = 100;
+public StoredAdpter storedAdpter;
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+//        if (checkSelfPermission(Manifest.permission.CAMERA)
+//                != PackageManager.PERMISSION_GRANTED) {
+//            requestPermissions(new String[]{Manifest.permission.CAMERA},
+//                    MY_CAMERA_REQUEST_CODE);
+//        }
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_DENIED){
+            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
+
+        }
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_DENIED){
+            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_CAMERA_REQUEST_CODE);
+
+        }
+
 
     }
 
@@ -162,18 +192,25 @@ public class MainActivity extends AppCompatActivity implements AttachmentSelecto
     }
 
     private void addAttachment(String path) {
-        View view = LayoutInflater.from(this).inflate(R.layout.item_attachment, null, false);
-        ImageView imgAttachment = view.findViewById(R.id.img_attachment);
+//        View view = LayoutInflater.from(this).inflate(R.layout.item_attachment, null, false);
+//        ImageView imgAttachment = view.findViewById(R.id.img_attachment);
+//
+//        imgAttachment.setImageResource(0);
+//        Glide.with(view.getContext())
+//                .load(path)
+//                .into(imgAttachment);
+//
+//        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+//                LinearLayout.LayoutParams.WRAP_CONTENT);
+//        recyclerView.addView(view, params);
+        getvalue();
 
-        imgAttachment.setImageResource(0);
-        Glide.with(view.getContext())
-                .load(path)
-                .into(imgAttachment);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        layoutAttachment.addView(view, params);
-
+    }
+    public void getvalue(){
+        layoutManager=new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false);
+        recyclerView.setLayoutManager(layoutManager);
+        storedAdpter=new StoredAdpter(MainActivity.this,filePathList);
+        recyclerView.setAdapter(storedAdpter);
     }
 
 }

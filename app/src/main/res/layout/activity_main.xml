@@ -6,16 +6,16 @@
     android:orientation="vertical"
     tools:context="com.nanda.filecompressor.activity.MainActivity">
 
-    <LinearLayout
+    <android.support.v7.widget.RecyclerView
         android:id="@+id/layout_attachment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/layout_compress_type"
         android:layout_margin="8dp"
         android:gravity="center"
-        android:orientation="horizontal">
+        >
 
-    </LinearLayout>
+    </android.support.v7.widget.RecyclerView>
 
     <RadioGroup
         android:id="@+id/layout_compress_type"
